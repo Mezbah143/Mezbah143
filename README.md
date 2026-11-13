@@ -122,8 +122,8 @@ Git · GitHub · IntelliJ IDEA · VS Code · Android Studio · Arduino
 ## Building, one contribution at a time
 
 <p>
-  <img src="https://raw.githubusercontent.com/Mezbah143/Mezbah143/output/stats.svg" width="440" alt="GitHub statistics for Mezbah143: public repositories, stars, and contributions in the last year">
-  <img src="https://raw.githubusercontent.com/Mezbah143/Mezbah143/output/languages.svg" width="440" alt="Most-used languages by code bytes in public, owned, non-fork repositories">
+  <img src="https://raw.githubusercontent.com/Mezbah143/Mezbah143/output/stats.svg" width="410" alt="GitHub statistics for Mezbah143: public repositories, stars, and contributions in the last year">
+  <img src="https://raw.githubusercontent.com/Mezbah143/Mezbah143/output/languages.svg" width="410" alt="Most-used languages by code bytes in public, owned, non-fork repositories">
 </p>
 
 <img src="https://raw.githubusercontent.com/Mezbah143/Mezbah143/output/activity.svg" width="100%" alt="Daily GitHub contributions over the last 31 days, with current and longest streaks within the last year">
