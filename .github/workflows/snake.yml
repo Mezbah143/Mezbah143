@@ -1,0 +1,85 @@
+name: Refresh profile visuals
+
+on:
+  schedule:
+    - cron: '23 3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/snake.yml'
+      - 'scripts/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: profile-visuals
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Prepare output branch while preserving previous images
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --heads origin output >/dev/null 2>&1; then
+            git fetch origin output
+            git worktree add dist -B output origin/output
+          else
+            mkdir dist
+            git -C dist init --initial-branch=output
+          fi
+
+      - name: Generate statistics from GitHub
+        id: stats
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROFILE_USER: ${{ github.repository_owner }}
+        run: python3 scripts/generate_metrics.py --output dist
+
+      - name: Generate contribution snakes
+        id: snake
+        continue-on-error: true
+        uses: Platane/snk/svg-only@d8f6715049803e982ee5ff501b6b9b7d5deeb09b # v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/github-snake.svg?color_snake=#7c3aed&color_dots=#e2e8f0,#a5f3fc,#67e8f9,#22d3ee,#0891b2
+            dist/github-snake-dark.svg?palette=github-dark&color_snake=#c4b5fd&color_dots=#172033,#164e63,#0e7490,#22d3ee,#67e8f9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Validate output and publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          for name in ['stats.svg', 'languages.svg', 'activity.svg', 'github-snake.svg', 'github-snake-dark.svg']:
+              path = Path('dist') / name
+              assert path.stat().st_size > 100, f'Missing or empty: {name}'
+              assert ET.parse(path).getroot().tag == '{http://www.w3.org/2000/svg}svg'
+          PY
+          git -C dist config user.name 'github-actions[bot]'
+          git -C dist config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C dist add -- '*.svg'
+          if ! git -C dist diff --cached --quiet; then
+            git -C dist commit -m 'Refresh profile visuals'
+            git fetch dist output
+            git push origin FETCH_HEAD:refs/heads/output
+          fi
+
+      - name: Report a partial refresh
+        if: steps.stats.outcome == 'failure' || steps.snake.outcome == 'failure'
+        run: |
+          echo 'A generator failed. Existing valid images were preserved if available; inspect the failed step.'
+          exit 1
